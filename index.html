@@ -10,7 +10,7 @@
 </head>
 <body>
     <h1>Leitura de QR Code</h1>
-    <video id="qrVideo" autoplay></video>
+    <canvas id="qrCanvas"></canvas>
     <button onclick="lerQRCode()">Ler QR Code</button>
 
     <!-- Script JavaScript -->
@@ -25,19 +25,25 @@
                 };
 
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                const video = document.getElementById('qrVideo');
+                const video = document.createElement('video');
+                document.body.appendChild(video);
                 video.srcObject = stream;
+                await video.play();
 
+                const canvas = document.getElementById('qrCanvas');
+                const context = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
                 const codeReader = new ZXing.BrowserQRCodeReader();
-                codeReader.decodeFromVideoElement(video, async (result, error) => {
-                    if (result) {
-                        enviarParaGoogleAppsScript(result.text);
-                        stream.getTracks().forEach(track => track.stop()); // Parar a câmera após a leitura
-                    }
-                    if (error) {
-                        console.error(error);
-                    }
-                });
+                const result = await codeReader.decodeFromImage(undefined, imageData);
+                enviarParaGoogleAppsScript(result.text);
+
+                stream.getTracks().forEach(track => track.stop());
+                document.body.removeChild(video);
             } catch (error) {
                 console.error(error);
             }
