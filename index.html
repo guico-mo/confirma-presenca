@@ -10,39 +10,36 @@
 </head>
 <body>
     <h1>Leitura de QR Code</h1>
-    <input type="file" accept="image/*" capture="environment" id="qrInput">
+    <video id="qrVideo" autoplay></video>
     <button onclick="lerQRCode()">Ler QR Code</button>
 
     <!-- Script JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.25.2"></script>
     <script>
-        function lerQRCode() {
-            var input = document.getElementById('qrInput');
-            var file = input.files[0];
-
-            if (file) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    var img = new Image();
-                    img.onload = function() {
-                        var canvas = document.createElement('canvas');
-                        var context = canvas.getContext('2d');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        context.drawImage(img, 0, 0);
-                        var qrCode = new QCodeDecoder();
-                        qrCode.decodeFromImage(canvas, function(er, res) {
-                            if (er) {
-                                console.error(er);
-                            } else {
-                                enviarParaGoogleAppsScript(res);
-                            }
-                        });
+        async function lerQRCode() {
+            try {
+                const constraints = {
+                    video: {
+                        facingMode: "environment"
                     }
-                    img.src = e.target.result;
                 };
-                reader.readAsDataURL(file);
-            } else {
-                console.error('Nenhum arquivo selecionado.');
+
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                const video = document.getElementById('qrVideo');
+                video.srcObject = stream;
+
+                const codeReader = new ZXing.BrowserQRCodeReader();
+                codeReader.decodeFromVideoElement(video, async (result, error) => {
+                    if (result) {
+                        enviarParaGoogleAppsScript(result.text);
+                        stream.getTracks().forEach(track => track.stop()); // Parar a câmera após a leitura
+                    }
+                    if (error) {
+                        console.error(error);
+                    }
+                });
+            } catch (error) {
+                console.error(error);
             }
         }
 
