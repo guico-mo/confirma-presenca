@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leitura de QR Code</title>
+    <style>
+        /* Estilos CSS */
+    </style>
+</head>
+<body>
+    <h1>Leitura de QR Code</h1>
+    <input type="file" accept="image/*" capture="environment" id="qrInput">
+    <button onclick="lerQRCode()">Ler QR Code</button>
+
+    <!-- Script JavaScript -->
+    <script>
+        function lerQRCode() {
+            var input = document.getElementById('qrInput');
+            var file = input.files[0];
+
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var img = new Image();
+                    img.onload = function() {
+                        var canvas = document.createElement('canvas');
+                        var context = canvas.getContext('2d');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        context.drawImage(img, 0, 0);
+                        var qrCode = new QCodeDecoder();
+                        qrCode.decodeFromImage(canvas, function(er, res) {
+                            if (er) {
+                                console.error(er);
+                            } else {
+                                enviarParaGoogleAppsScript(res);
+                            }
+                        });
+                    }
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                console.error('Nenhum arquivo selecionado.');
+            }
+        }
+
+        function enviarParaGoogleAppsScript(qrCodeData) {
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "URL_DO_SEU_GOOGLE_APPS_SCRIPT", true);
+            xhr.setRequestHeader("Content-Type", "text/plain");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    console.log("Dados enviados com sucesso!");
+                }
+            };
+            xhr.send(qrCodeData);
+        }
+    </script>
+</body>
+</html>
